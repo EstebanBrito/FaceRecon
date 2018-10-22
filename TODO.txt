@@ -1,0 +1,10 @@
+-Face Recognition
+--Neural network for embeddings extraction
+--OPENCV default trainers (LMHP)
+--Generate xml files or equivalent for specific face detection
+--
+
+-Video Capture
+--Generic methods for video capture (from WebCam and RaspiCam)
+--Speed tweaks
+--Speed reliability
