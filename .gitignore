@@ -167,9 +167,12 @@ training-data/
 training-data/*.jpg
 /training-data/*.jpg
 *.jpg
+*.jpeg
+*.png
 
 ### Other stuff ###
 .idea/
 .idea
-*.jpeg
-*.png
+
+### My crazy stuff ###
+test.py

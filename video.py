@@ -6,7 +6,7 @@ if __name__ == "__main__":
     minFaceSize = 80
     maxFaceSize = 200
 
-    faceCascade = cv2.CascadeClassifier('haarcascade_frontalface_default.xml')
+    faceCascade = cv2.CascadeClassifier('xml-files/haarcascades/haarcascade_frontalface_default.xml')
 
     video_capture = cv2.VideoCapture(0)
 
