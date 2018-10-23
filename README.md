@@ -8,6 +8,5 @@ $ pip install -r requirements.txt
 ```
 
 ## run
-``` bash
-$ python3
+$ python3 main.py
 ```

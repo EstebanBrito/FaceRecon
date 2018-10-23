@@ -1,11 +1,11 @@
 import cv2
-# import numpy
+import numpy as np
 import os
 
 
 def detectFace(img):
-    """Returns a gray image containing the face detected in the
-    given image"""
+    """Returns a cropped gray image containing the face detected in the
+    given image. The coords of the face are also returned"""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
     classifier = cv2.CascadeClassifier('xml-files/lbpcascades/lbpcascade_frontalface.xml')
@@ -25,7 +25,6 @@ def detectFace(img):
     # It is known that there will be only one face, extract the face area
     (x, y, w, h) = face[0]
 
-    # Return a gray cropped face image (and its coords) of the given image
     return gray[y:y + w, x:x + h], face[0]
 
 
@@ -88,8 +87,7 @@ def prepareTrainingData(data_folder_path="training-data"):
             cv2.waitKey(0)
             cv2.destroyAllWindows()
 
-            # Detect face, add it to list of faces
-            # and add its label to list of labels
+            # Detect face, add faces and label to the lists
             face, rect = detectFace(image)
             if face is not None:
                 faces.append(face)
@@ -98,34 +96,29 @@ def prepareTrainingData(data_folder_path="training-data"):
     return faces, labels
 
 
-def draw_rectangle(img, rect):
+def drawRectangleText(img, rect, text):
     """Draw a rectangle with the given coordinates (rect) in the image"""
     (x, y, w, h) = rect
     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    cv2.putText(img, text, (x + 5, y - 5), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
+    return img
 
 
-def draw_text(img, text, x, y):
-    """Draws text at a specific coordinate in the given image"""
-    cv2.putText(img, text, (x, y), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
-
-
-def predict(test_img):
+def predict(test_img, recognizer):
     """Recognizes the person in the image and marks it with
     a rectangle and his/her name"""
     # make a copy of the image as we don't want to change original image
-    img = test_img.copy()
+    img = test_img  # .copy()
     # detect face from the image
-    face, rect = detectFace()
+    face, rect = detectFace(img)
 
     # predict the image using our face recognizer
-    label = faceRecognizer.predict(face)
+    label = recognizer.predict(face)
     # get name of respective label returned by face recognizer
     label_text = subjects[label]
 
     # draw a rectangle around face detected
-    draw_rectangle(img, rect)
-    # draw name of predicted person
-    draw_text(img, label_text, rect[0], rect[1] - 5)
+    img = drawRectangleText(img, rect, label_text)
 
     return img
 
@@ -140,31 +133,32 @@ if __name__ == "__main__":
     print("Data prepared")
     print("")
 
-    # DEBUG
     print("Total faces: ", len(faces))
     print("Total labels: ", len(labels))
 
+    # DEBUG
     for img in faces:
         cv2.imshow("Faces...", img)
+    # END DEBUG
 
     # Creating our face recognizer and train it
-    # face_recognizer = cv2.face.createLBPHFaceRecognizer()
-    # face_recognizer.train(faces, np.array(labels))
+    face_recognizer = cv2.face.createLBPHFaceRecognizer()
+    face_recognizer.train(faces, np.array(labels))
 
-    # NEED TO ORGANIZE THIS CODE
     print("Predicting images...")
 
     # load test images
-    test_img1 = cv2.imread("test-data/test1.jpg")
-    test_img2 = cv2.imread("test-data/test2.jpg")
+    test_img1 = cv2.imread("test-data/test1.jpeg")
+    test_img2 = cv2.imread("test-data/test2.jpeg")
 
     # perform a prediction
-    predicted_img1 = predict(test_img1)
-    predicted_img2 = predict(test_img2)
+    predicted_img1 = predict(test_img1, face_recognizer)
+    predicted_img2 = predict(test_img2, face_recognizer)
     print("Prediction complete")
 
     # display both images
     cv2.imshow(subjects[1], predicted_img1)
+    cv2.waitKey(0)
     cv2.imshow(subjects[2], predicted_img2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
