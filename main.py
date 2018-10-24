@@ -14,11 +14,10 @@ def detectFace(img):
         gray,
         scaleFactor=1.2,
         minNeighbors=5,
-        minSize=(80, 80),
-        maxSize=(200, 200)
+        minSize=(80, 80)
     )
 
-    # If no faces are detected then return original img
+    # If no faces are detected don't return anything
     if len(face) == 0:
         return None, None
 
@@ -107,17 +106,19 @@ def drawRectangleText(img, rect, text):
 def predict(test_img, recognizer):
     """Recognizes the person in the image and marks it with
     a rectangle and his/her name"""
-    # make a copy of the image as we don't want to change original image
-    img = test_img  # .copy()
-    # detect face from the image
+    # Making a security copy of the img
+    img = test_img
+
+    # Detect face from the image
     face, rect = detectFace(img)
 
-    # predict the image using our face recognizer
+    # Predict the image using our face recognizer
     label = recognizer.predict(face)
-    # get name of respective label returned by face recognizer
-    label_text = subjects[label]
 
-    # draw a rectangle around face detected
+    # Get name of label (first elem of tuple) returned by face recognizer
+    label_text = subjects[label[0]]
+
+    # Mark down the image with a rectangle and text
     img = drawRectangleText(img, rect, label_text)
 
     return img
@@ -136,20 +137,15 @@ if __name__ == "__main__":
     print("Total faces: ", len(faces))
     print("Total labels: ", len(labels))
 
-    # DEBUG
-    for img in faces:
-        cv2.imshow("Faces...", img)
-    # END DEBUG
-
     # Creating our face recognizer and train it
-    face_recognizer = cv2.face.createLBPHFaceRecognizer()
+    face_recognizer = cv2.face.LBPHFaceRecognizer_create()
     face_recognizer.train(faces, np.array(labels))
 
     print("Predicting images...")
 
     # load test images
     test_img1 = cv2.imread("test-data/test1.jpeg")
-    test_img2 = cv2.imread("test-data/test2.jpeg")
+    test_img2 = cv2.imread("test-data/test3.jpeg")
 
     # perform a prediction
     predicted_img1 = predict(test_img1, face_recognizer)
