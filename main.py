@@ -158,3 +158,6 @@ if __name__ == "__main__":
     cv2.imshow(subjects[2], predicted_img2)
     cv2.waitKey(0)
     cv2.destroyAllWindows()
+
+    # saving trained model
+    face_recognizer.save("trained-models/model.yml")
