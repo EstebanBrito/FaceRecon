@@ -16,38 +16,35 @@ def validateImgs(folder_path="training-data/test"):
     facial recognition (imgs have at least one face,
     min/max size, etc). """
 
-    imgs_names = os.listdir(folder_path)
     imgs = []
     non_valid_imgs = []
 
-    # Read images
+    # Reading paths for images inside chosen folder
+    imgs_names = os.listdir(folder_path)
+
+    # READING IMAGES
     for name in imgs_names:
         img_path = folder_path + "/" + name
-        print(img_path)  # DEBUG
         image = cv2.imread(img_path)
         imgs.append(image)
 
-    faced = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
+    # Creating face detector (using haar cascade for better accuracy)
+    face_detector = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
 
-    # Tweak imgs and detect faces
     for img in imgs:
+        # STANDARDIZING IMAGES
         # Resizing images (shortest size should be 500px)
-        print("Size: " + str(img.shape[1]) + "x" + str(img.shape[0]), end=" - ")
-
-        factor = 0.75
         if img.shape[0] < img.shape[0]:  # Height is shorter
             factor = 500/img.shape[0]
         else:  # Width is shorter
             factor = 500/img.shape[1]
         img = cv2.resize(src=img, dsize=(0, 0), fx=factor, fy=factor)
 
-        print("Size: " + str(img.shape[1]) + "x" + str(img.shape[0]))
-
         # Tweaking images
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        # Detecting faces
-        faces = faced.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=6, minSize=(30, 30))
+        # DETECTING AND SHOWING IMAGES
+        faces = face_detector.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=6, minSize=(30, 30))
 
         # Validates if there are faces inside img
         if len(faces) != 1:
@@ -71,12 +68,14 @@ def validateImgs(folder_path="training-data/test"):
 
 def trainModel():
     print("Preparing data...")
-    # Two lists that relates a face with its label
+
+    # Lists that relates a face with its label, and a label/number with a name
     faces, labels, numbers, names = prepareTrainingData("training-data")
 
     print("Data prepared")
     print()
 
+    # Results of training preparation
     print("Total faces: ", len(faces))
     print("Total labels: ", len(labels))
     for number in numbers:
@@ -90,9 +89,9 @@ def trainModel():
     face_recognizer = cv2.face.LBPHFaceRecognizer_create()
     face_recognizer.train(faces, np.array(labels))
 
-    # saving trained model
+    # Saving trained model
     face_recognizer.save("model.yml")
-    # saving relations number-name
+    # Saving face recognition profiles
     file = open("training-data/profiles.txt", "w")
     for i in range(len(numbers)):
         file.write(str(numbers[i]) + "-" + names[i] + "\n")
@@ -104,7 +103,8 @@ def detectFace(img):
     given image. The coords of the face are also returned"""
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-    classifier = cv2.CascadeClassifier('xml-files/lbpcascades/lbpcascade_frontalface.xml')
+    # Creating face detector (using haar cascade for better accuracy)
+    classifier = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
 
     face = classifier.detectMultiScale(
         gray,
@@ -200,12 +200,20 @@ def prepareTrainingData(data_folder_path="training-data"):
                 continue
 
             # Build image path
-            # Sample: image path = training-data/s1/1.jpg
+            # Should be smth like: image path = "training-data/s1/1.jpg"
             image_path = subject_path + "/" + image_name
 
-            # Read and display image
+            # Read image
             image = cv2.imread(image_path)
 
+            # Resizing images (shortest size should be 500px)
+            if image.shape[0] < image.shape[0]:  # Height is shorter
+                factor = 500 / image.shape[0]
+            else:  # Width is shorter
+                factor = 500 / image.shape[1]
+            image = cv2.resize(src=image, dsize=(0, 0), fx=factor, fy=factor)
+
+            # Display image (feedback)
             cv2.imshow("Training on image...", image)
             cv2.waitKey(0)
             cv2.destroyAllWindows()
@@ -247,16 +255,16 @@ def test():
     model = cv2.face.LBPHFaceRecognizer_create()
     model.read("model.yml")
 
+    # Getting image paths from test-data
     img_names = os.listdir("test-data")
 
     for img_name in img_names:
-        if not os.path.isfile("test-data/" + img_name):
+        if not os.path.isfile("test-data/" + img_name):  # If not an image, skip it
             continue
 
         img = cv2.imread("test-data/" + img_name)
 
         # Resizing images (shortest size should be 500px)
-        factor = 0.75
         if img.shape[0] < img.shape[0]:  # Height is shorter
             factor = 500 / img.shape[0]
         else:  # Width is shorter
@@ -302,32 +310,37 @@ def showProfileMenu():
 if __name__ == "__main__":
     while True:
         op = 0
-        while op < 1 or op > 4:
+        while op < 1 or op > 5:
             print("MENU DE RECON FACIAL:")
             print("[ 1 ] --- Iniciar Recon Facial")
             print("[ 2 ] --- Administrar perfiles faciales")
-            print("[ 3 ] --- Testear imgs (de test-data)")
-            print("[ 4 ] --- Salir")
+            print("[ 3 ] --- Testear modelo con imgs (de test-data)")
+            print("[ 4 ] --- Validar nuevas imgs (de training-data/test)")
+            print("[ 5 ] --- Salir")
             op = int(input("Ingresa el numero de tu eleccion: "))
             print()
 
         if op == 1:
             if os.path.isfile("model.yml"):
                 # Start facial recognition
-                print("Iniciando recon")
+                print("Reconociendo")
                 print()
                 # startRecon()
             else:
                 # Train the model and then start recon
-                print("Training and recon")
+                print("Entrenando y reconociendo")
                 print()
                 trainModel()
                 # startRecon()
         elif op == 2:
             showProfileMenu()
         elif op == 3:
-            print("Testing")
+            print("Testeando")
             test()
             print()
         elif op == 4:
+            print("Validando")
+            validateImgs()
+            print()
+        elif op == 5:
             exit(0)
