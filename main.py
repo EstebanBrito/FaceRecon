@@ -3,6 +3,14 @@ import numpy as np
 import os
 
 
+def drawRectangleText(img, rect, text):
+    """Draw a rectangle with the given coordinates (rect) in the image"""
+    (x, y, w, h) = rect
+    cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+    cv2.putText(img, text, (x + 5, y - 5), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
+    return img
+
+
 def validateImgs(folder_path="training-data/test"):
     """Validate if the images inside folder are valid for
     facial recognition (imgs have at least one face,
@@ -12,7 +20,7 @@ def validateImgs(folder_path="training-data/test"):
     imgs = []
     non_valid_imgs = []
 
-    # Read imgs
+    # Read images
     for name in imgs_names:
         img_path = folder_path + "/" + name
         print(img_path)  # DEBUG
@@ -85,6 +93,10 @@ def trainModel():
     # saving trained model
     face_recognizer.save("model.yml")
     # saving relations number-name
+    file = open("training-data/profiles.txt", "w")
+    for i in range(len(numbers)):
+        file.write(str(numbers[i]) + "-" + names[i] + "\n")
+    file.close()
 
 
 def detectFace(img):
@@ -109,6 +121,35 @@ def detectFace(img):
     (x, y, w, h) = face[0]
 
     return gray[y:y + w, x:x + h], face[0]
+
+
+def predict(test_img, recognizer, subjects):
+    """Recognizes the person in the image and marks it with
+    a rectangle and his/her name"""
+    # Making a security copy of the img
+    img = test_img
+
+    # Detect face from the image
+    face, rect = detectFace(img)
+
+    # Predict the image using our face recognizer
+    label = recognizer.predict(face)
+
+    print(label)  # DEBUG
+
+    # Get name of label (first elem of tuple, an integer) returned by face recognizer
+    if label[1] < 60:  # If confidence is small enough
+        if label[0] in subjects:
+            label_text = subjects[label[0]]
+        else:
+            label_text = "Not registered"
+    else:
+        label_text = "Unknown"
+
+    # Mark down the image with a rectangle and text
+    img = drawRectangleText(img, rect, label_text)
+
+    return img
 
 
 def prepareTrainingData(data_folder_path="training-data"):
@@ -182,8 +223,51 @@ def showCurrentProfiles():
     if os.path.isfile("training-data/profiles.txt"):
         # Read profiles from file
         print("Leyendo perfiles")
+        file = open("training-data/profiles.txt")
+        for line in file:
+            print(line, end="")
     else:
         print("No existe perfil alguno")
+
+
+def startRecon():
+    pass
+
+
+def test():
+    # Relations number-person
+    subjects = {}
+    file = open("training-data/profiles.txt", "r")
+    for line in file:
+        line = line.replace("\n", "")
+        subjects[int(line[0])] = line.replace(line[0] + "-", "")
+    file.close()
+
+    # Trained model
+    model = cv2.face.LBPHFaceRecognizer_create()
+    model.read("model.yml")
+
+    img_names = os.listdir("test-data")
+
+    for img_name in img_names:
+        if not os.path.isfile("test-data/" + img_name):
+            continue
+
+        img = cv2.imread("test-data/" + img_name)
+
+        # Resizing images (shortest size should be 500px)
+        factor = 0.75
+        if img.shape[0] < img.shape[0]:  # Height is shorter
+            factor = 500 / img.shape[0]
+        else:  # Width is shorter
+            factor = 500 / img.shape[1]
+        img = cv2.resize(src=img, dsize=(0, 0), fx=factor, fy=factor)
+
+        predimg = predict(img, model, subjects)
+
+        cv2.imshow("Image", predimg)
+        cv2.waitKey()
+        cv2.destroyAllWindows()
 
 
 def showProfileMenu():
@@ -218,11 +302,12 @@ def showProfileMenu():
 if __name__ == "__main__":
     while True:
         op = 0
-        while op < 1 or op > 3:
+        while op < 1 or op > 4:
             print("MENU DE RECON FACIAL:")
             print("[ 1 ] --- Iniciar Recon Facial")
             print("[ 2 ] --- Administrar perfiles faciales")
-            print("[ 3 ] --- Salir")
+            print("[ 3 ] --- Testear imgs (de test-data)")
+            print("[ 4 ] --- Salir")
             op = int(input("Ingresa el numero de tu eleccion: "))
             print()
 
@@ -241,4 +326,8 @@ if __name__ == "__main__":
         elif op == 2:
             showProfileMenu()
         elif op == 3:
+            print("Testing")
+            test()
+            print()
+        elif op == 4:
             exit(0)
