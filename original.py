@@ -28,10 +28,9 @@ def detectFace(img):
 
 
 def prepareTrainingData(data_folder_path="training-data"):
-    """Reads training img path and returns two lists that relate
+    """Reads training images path and returns two lists that relate
     an img with an integer (label for ech person to recognize)"""
 
-    # ------STEP-1--------
     # get the directories (one directory for each subject) in data folder
     dirs = os.listdir(data_folder_path)
 
@@ -161,3 +160,5 @@ if __name__ == "__main__":
 
     # saving trained model
     # face_recognizer.save("model.yml")
+
+    # relations
