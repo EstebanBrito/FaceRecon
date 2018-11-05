@@ -28,8 +28,8 @@ def validateImgs(folder_path="training-data/test"):
         image = cv2.imread(img_path)
         imgs.append(image)
 
-    # Creating face detector (using haar cascade for better accuracy)
-    face_detector = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
+    # Creating face detector (using lbp cascade to simulate detection with video streaming)
+    face_detector = cv2.CascadeClassifier("xml-files/lbpcascades/lbpcascade_frontalface.xml")
 
     for img in imgs:
         # STANDARDIZING IMAGES

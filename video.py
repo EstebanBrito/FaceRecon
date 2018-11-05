@@ -3,7 +3,7 @@ import cv2
 
 if __name__ == "__main__":
     # Default sizes
-    minFaceSize = 80
+    minFaceSize = 60
     maxFaceSize = 200
 
     faceCascade = cv2.CascadeClassifier('xml-files/haarcascades/haarcascade_frontalface_default.xml')
@@ -14,12 +14,11 @@ if __name__ == "__main__":
         # Capture frame-by-frame
         returnValue, frame = video_capture.read()
         if returnValue != 0:
-
             gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
             faces = faceCascade.detectMultiScale(
                 gray,
-                scaleFactor=1.1,
+                scaleFactor=1.2,
                 minNeighbors=10,
                 minSize=(minFaceSize, minFaceSize),
                 maxSize=(maxFaceSize, maxFaceSize)
