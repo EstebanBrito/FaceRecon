@@ -17,6 +17,7 @@ def validateImgs(folder_path="training-data/test"):
     min/max size, etc). """
 
     imgs = []
+    valid_imgs_paths = []
     non_valid_imgs = []
 
     # Reading paths for images inside chosen folder
@@ -44,7 +45,7 @@ def validateImgs(folder_path="training-data/test"):
         gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # DETECTING AND SHOWING IMAGES
-        faces = face_detector.detectMultiScale(gray, scaleFactor=1.2, minNeighbors=6, minSize=(30, 30))
+        faces = face_detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=7, minSize=(30, 30))
 
         # Validates if there are faces inside img
         if len(faces) != 1:
@@ -53,6 +54,8 @@ def validateImgs(folder_path="training-data/test"):
             # Manipulating and showing valid images
             for (x, y, w, h) in faces:
                 cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+            valid_imgs_paths.append()
 
             cv2.imshow("Valid image", img)
             cv2.waitKey(0)
@@ -68,6 +71,11 @@ def validateImgs(folder_path="training-data/test"):
 
 def trainModel():
     print("Preparing data...")
+
+    # TEMP Delete previous model file
+    if os.path.isfile("model.yml"):
+        os.remove("model.yml")
+        os.remove("training-data/profiles.txt")
 
     # Lists that relates a face with its label, and a label/number with a name
     faces, labels, numbers, names = prepareTrainingData("training-data")
@@ -213,16 +221,26 @@ def prepareTrainingData(data_folder_path="training-data"):
                 factor = 500 / image.shape[1]
             image = cv2.resize(src=image, dsize=(0, 0), fx=factor, fy=factor)
 
-            # Display image (feedback)
-            cv2.imshow("Training on image...", image)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
-
-            # Detect face, add faces and label to the lists
+            # Detect face and add original and variants to training data
             face, rect = detectFace(image)
             if face is not None:
+                # Add original pair
                 faces.append(face)
                 labels.append(label)
+
+                # Get shortest shape
+                if face.shape[0] < face.shape[0]:  # Height is shorter
+                    shortest = face.shape[0]
+                else:  # Width is shorter
+                    shortest = face.shape[1]
+
+                # Resize and add additional pairs
+                for i in range(4):
+                    # Get factor to resize to 60, 90, 120, 150px
+                    factor = (60 + 30*i) / shortest
+                    new_face = cv2.resize(src=face, dsize=None, fx=factor, fy=factor)
+                    faces.append(new_face)
+                    labels.append(label)
 
     return faces, labels, numbers, names
 
@@ -239,7 +257,89 @@ def showCurrentProfiles():
 
 
 def startRecon():
-    pass
+    # DEFINING PARAMETERS (for better performance)
+    min_face_size = 50  # 40 is good for PiCamera detection up to 4 meters
+    max_face_size = 150
+
+    # LOADING RESOURCES
+    # Relations number-person
+    subjects = {}
+    if not os.path.isfile("training-data/profiles.txt"):
+        print("No se encontro archivo de perfiles")
+        exit(0)
+    file = open("training-data/profiles.txt", "r")
+    for line in file:
+        line = line.replace("\n", "")
+        subjects[int(line[0])] = line.replace(line[0] + "-", "")
+    file.close()
+
+    # Trained model
+    if not os.path.isfile("training-data/profiles.txt"):
+        print("No se encontro archivo de modelo")
+        exit(0)
+    model = cv2.face.LBPHFaceRecognizer_create()
+    model.read("model.yml")
+
+    # Cascade classifier (using lbp for faster performance)
+    cascade = cv2.CascadeClassifier('xml-files/lbpcascades/lbpcascade_frontalface.xml')
+
+    # Video stream
+    video = cv2.VideoCapture(0)
+
+    # READING VIDEO STREAM
+    while True:
+        return_value, frame = video.read()
+        if return_value == 0:  # If frame is empty, pick next frame
+            continue
+
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detecting faces in frame
+        faces = cascade.detectMultiScale(
+            gray_frame,
+            scaleFactor=1.1,
+            minNeighbors=10,
+            minSize=(min_face_size, min_face_size),
+            maxSize=(max_face_size, max_face_size)
+        )
+
+        # PROCESSING EACH IMAGE
+        for (x, y, h, w) in faces:
+            # Crop face
+            cropped_face = gray_frame[y:y + w, x:x + h]
+
+            # Predict face
+            label = model.predict(cropped_face)
+
+            # Get name of label (first elem of tuple, an integer) returned by face recognizer
+            if label[1] < 100:  # If confidence is small enough ()
+                if label[0] in subjects:
+                    name = subjects[label[0]]
+                else:
+                    name = "Not registered"
+            else:
+                name = "Unknown"
+
+            confidence = 100 - label[1]
+            label_text = name + " - " + format(confidence, ".2f") + "%"
+
+            # Draw rectangle and text
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            cv2.putText(frame, label_text, (x + 5, y - 5), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
+
+        # Draw rectangles for developer mode
+        cv2.rectangle(frame, (0, 0), (0 + max_face_size, 0 + max_face_size), (255, 0, 0))  # Max size
+        cv2.rectangle(frame, (max_face_size, 0), (max_face_size + min_face_size, 0 + min_face_size), (0, 0, 255))  # Min size
+
+        # Display the resulting frame
+        cv2.imshow('Video feed', frame)
+
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            break
+
+    # When everything is done, release the capture
+    video.release()
+    cv2.destroyAllWindows()
 
 
 def test():
@@ -278,45 +378,23 @@ def test():
         cv2.destroyAllWindows()
 
 
-def showProfileMenu():
-    """Show a menu for profile management"""
-    while True:
-        op2 = 0
-        while op2 < 1 or op2 > 4:
-            print("ADMINISTRAR PERFILES")
-            print("[ 1 ] --- Mostrar perfiles actuales")
-            print("[ 2 ] --- Añadir perfil")
-            print("[ 3 ] --- Eliminar perfil")
-            print("[ 4 ] --- Regresar a menu principal")
-            op2 = int(input("Ingresa el numero de tu eleccion: "))
-            print()
-
-        if op2 == 1:
-            showCurrentProfiles()
-            print()
-        elif op2 == 2:
-            print("Adding profile")
-            print()
-            validateImgs()
-            print()
-        elif op2 == 3:
-            # Delete profile
-            print("Deleting profile")
-            print()
-        elif op2 == 4:
-            break
-
-
 if __name__ == "__main__":
     while True:
         op = 0
-        while op < 1 or op > 5:
+        while op < 1 or op > 9:
+            # Final version menu options
             print("MENU DE RECON FACIAL:")
-            print("[ 1 ] --- Iniciar Recon Facial")
-            print("[ 2 ] --- Administrar perfiles faciales")
-            print("[ 3 ] --- Testear modelo con imgs (de test-data)")
-            print("[ 4 ] --- Validar nuevas imgs (de training-data/test)")
-            print("[ 5 ] --- Salir")
+            print("[ 1 ] --- Iniciar reconocimiento facial")
+            print("[ 2 ] --- Detener reconocimiento facial")
+            print("[ 3 ] --- Entrenar modelo")
+            print("[ 4 ] --- Ver perfiles faciales del modelo")
+            print("[ 5 ] --- Agregar perfiles faciales")
+            print("[ 6 ] --- Remover perfiles faciales")
+            print("[ 7 ] --- Salir")
+            # Temporary options(developer mode)
+            print("[ 8 ] --- Testear modelo con imgs (de test-data)")
+            print("[ 9 ] --- Validar nuevas imgs (de training-data/test)")
+            print()
             op = int(input("Ingresa el numero de tu eleccion: "))
             print()
 
@@ -325,22 +403,40 @@ if __name__ == "__main__":
                 # Start facial recognition
                 print("Reconociendo")
                 print()
-                # startRecon()
+                startRecon()
             else:
-                # Train the model and then start recon
+                # There's no model. Train and then recon
                 print("Entrenando y reconociendo")
                 print()
                 trainModel()
-                # startRecon()
+                startRecon()
         elif op == 2:
-            showProfileMenu()
+            # Stop facial recognition
+            print("Deteniendo recon facial")
+            print()
         elif op == 3:
+            print("Entrenando modelo")
+            print()
+            trainModel()
+            print()
+        elif op == 4:
+            print("Accediendo a perfiles")
+            print()
+        elif op == 5:
+            print("Agregando perfil")
+            print()
+        elif op == 6:
+            print("Removiendo perfil")
+            print()
+        elif op == 7:
+            exit(0)
+        elif op == 8:
             print("Testeando")
             test()
             print()
-        elif op == 4:
+        elif op == 9:
             print("Validando")
             validateImgs()
             print()
-        elif op == 5:
-            exit(0)
+        else:
+            print("Opcion no valida")
