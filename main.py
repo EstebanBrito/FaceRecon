@@ -438,6 +438,7 @@ if __name__ == "__main__":
             # Stop facial recognition
             print("Deteniendo recon facial")
             print()
+            # [Facial recon code goes here]
         elif op == 3:
             print("Entrenando modelo")
             print()
@@ -446,11 +447,14 @@ if __name__ == "__main__":
         elif op == 4:
             print("Accediendo a perfiles")
             print()
+            # [Facial profiles view code goes here]
         elif op == 5:
             print("Agregando perfil")
+            # [Facial profile addition goes here]
             print()
         elif op == 6:
             print("Removiendo perfil")
+            # [Facial profile remotion goes here]
             print()
         elif op == 7:
             exit(0)
