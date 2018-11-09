@@ -157,12 +157,8 @@ pip-selfcheck.json
 ### My stuff ###
 
 # Training images
-# training-data/*
-training-data/temp/*
-
-# Trained model data
-model
-model/
+training-data/*
+test-data
 
 # Temporary files
 test.py
