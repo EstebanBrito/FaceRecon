@@ -2,8 +2,16 @@ import cv2
 import numpy as np
 import os
 import shutil
+import time
+
+
+def resizeDyn(refrncSide=None, size=None, factor=None):
+    """Returns a resized version depending on different conditions"""
+    pass
+
 
 def convertToGray(img):
+    """Returns a gray scale version of given img. Used when detecting faces"""
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
     return img
 
@@ -13,6 +21,50 @@ def drawRectangleText(img, x, y, w, h, text):
     cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
     cv2.putText(img, text, (x + 5, y - 5), cv2.FONT_HERSHEY_PLAIN, 1.5, (0, 255, 0), 2)
     return img
+
+
+def showCurrentProfiles():
+    if os.path.isfile("model/profiles.txt"):
+        # Read profiles from file
+        print("Leyendo perfiles")
+        file = open("model/profiles.txt")
+        for line in file:
+            print(line, end="")
+        file.close()
+    else:
+        print("No existe perfil alguno")
+
+
+def getNumbers(file):
+    """Returns a list of current names founded in profiles file"""
+    numbers = []
+    if os.path.isfile(file):
+        # Read profile names from file
+        profiles = open(file, "r")
+        for line in profiles:
+            # Get only names from profiles file
+            number = int(line[:1])
+            numbers.append(number)
+        profiles.close()
+        return numbers
+    else:
+        return numbers
+
+
+def getNames(file):
+    """Returns a list of current names founded in profiles file"""
+    names = []
+    if os.path.isfile(file):
+        # Read profile names from file
+        profiles = open(file, "r")
+        for line in profiles:
+            # Get only names from profiles file
+            name = line[2:len(line) - 1]
+            names.append(name)
+        profiles.close()
+        return names
+    else:
+        return names
 
 
 def cropAndSaveFaces(folder_path="training-data/temp"):
@@ -25,7 +77,7 @@ def cropAndSaveFaces(folder_path="training-data/temp"):
     # Building path for folder where cropped faces imgs will be saved
     cropped_faces_folder = folder_path + "/valid-imgs"
 
-    # Deleting cropped faces from previous operations
+    # Validates that a brand new folder is available to storage cropped faces
     if os.path.isdir(cropped_faces_folder):
         shutil.rmtree(cropped_faces_folder)
         os.mkdir(cropped_faces_folder)
@@ -43,52 +95,56 @@ def cropAndSaveFaces(folder_path="training-data/temp"):
     crops = 0
 
     for img_name in imgs_names:
-        # Building path for next image to read
+        # Build path for next image to read
         img_path = folder_path + "/" + img_name
 
-        # Skipping file if its a folder (not a file)
+        # Skip file if its a folder (not a file)
         if not os.path.isfile(img_path):
             continue
 
-        # Reading image
+        # Read image
         img = cv2.imread(img_path)
 
         # TWEAKING IMAGE
-        # Resizing image (shortest size should be 500px)
+        # Resise image (shortest size should be 500px)
         if img.shape[0] < img.shape[0]:  # Height is shorter
             factor = 500/img.shape[0]
         else:  # Width is shorter
             factor = 500/img.shape[1]
         img = cv2.resize(src=img, dsize=(0, 0), fx=factor, fy=factor)
 
-        # Converting image to gray scale (for better detection accuracy)
+        # Convert image to gray scale (for better detection accuracy)
         gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
-        # DETECTING AND SHOWING IMAGES
+        # DETECTING, CROPPING AND SAVING IMAGES
         # Detecting faces
         faces = face_detector.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=7, minSize=(30, 30))
 
-        # Validates if there is only one face inside img
+        # If there is only one face inside img, proceed to crop
         if len(faces) == 1:
             (x, y, w, h) = faces[0]
-            # Mark down with a rectangle the face on the img
-            cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
-            # Crop face from gray_img and save it to a file inside proper profile folder
-            cropped_face = gray_img[y:y + w, x:x + h]
-            crops += 1
-            cv2.imwrite(cropped_faces_folder + "/" + str(crops) + ".jpg", cropped_face)
 
-            # Show drawed img (uncomment if you need feedback)
-            # cv2.imshow("Valid image" + str(crops), img)
+            # Draw over and show img (uncomment if you need feedback)
+            # cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+            # cv2.imshow("Valid image number " + str(crops), img)
             # cv2.waitKey(0)
             # cv2.destroyAllWindows()
+
+            # Crop face from gray_img
+            cropped_face = gray_img[y:y + w, x:x + h]
+            # Build path to save img
+            crops += 1
+            cropped_img_name = cropped_faces_folder + "/" + str(crops) + ".jpg"
+            # Save img
+            cv2.imwrite(cropped_img_name, cropped_face)
         else:
             # Add path for posterior handling (manual validation, weaker detection, etc)
             non_valid_imgs_paths.append(img_path)
 
+    # FINISH
     # Showing non-valid images (uncomment if you need feedback)
-    for img_path in non_valid_imgs_paths:
-        print(img_path)
+    # for img_path in non_valid_imgs_paths:
+    #    print(img_path)
     #    img = cv2.imread(img_path)
     #    cv2.imshow("NON-VALID IMAGE", img)
     #    cv2.waitKey(0)
@@ -97,9 +153,154 @@ def cropAndSaveFaces(folder_path="training-data/temp"):
     print("Cropped " + str(crops) + " faces")
 
 
+def getMediaFromImages():
+    print("Pon las imgs manualmente en training-data/test. Espera 20s")
+    time.sleep(20)
+
+
+def getMediaFromWebcam(cropped_faces_folder="training-data/temp"):
+    # Performance parameters
+    min_face_size = 50
+    max_face_size = 200
+
+    # Loading face detector
+    face_detector = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
+
+    # Loading video feed
+    video = cv2.VideoCapture(0)
+
+    # Counter for current frame
+    crops = 0
+    current_frame = 0
+    cropping_is_active = False
+
+    while True:
+        # Read video frame by frame
+        value, frame = video.read()
+        # If frame is empty, pick next frame
+        if value == 0:
+            continue
+
+        # DETECTING FACES
+        # Convert frame to gray scale for better detection accuracy
+        gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+
+        # Detecting faces in frame
+        faces = face_detector.detectMultiScale(
+            gray_frame,
+            scaleFactor=1.1,
+            minNeighbors=8,
+            minSize=(min_face_size, min_face_size),
+            maxSize=(max_face_size, max_face_size)
+        )
+
+        # PROCESSING EACH FACE IN FRAME
+        for (x, y, h, w) in faces:
+            cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
+        # Display resulting frame
+        cv2.imshow('Video feed', frame)
+
+        # CROPPING FACES
+        # If cropping mode is active, crop face from frame and save it
+        if cropping_is_active:
+            current_frame += 1
+            # If there is only one face, crop and save it
+            if len(faces) == 1 and current_frame % 10 == 0:
+                (x, y, h, w) = faces[0]
+                cropped_face = gray_frame[y:y + w, x:x + h]
+
+                # Build path to save img
+                crops += 1
+                cropped_img_path = cropped_faces_folder + "/" + str(current_frame) + ".jpg"
+                # Save img
+                cv2.imwrite(cropped_img_path, cropped_face)
+
+        # Recognition will stop if 'q' is pressed
+        if cv2.waitKey(1) & 0xFF == ord('q'):
+            if cropping_is_active:
+                print("")
+                break
+            else:
+                cropping_is_active = True
+                counter = 0
+                crops = 0
+            break
+
+    # When everything is done, release resources (webcam or RPi stream)
+    video.release()
+    cv2.destroyAllWindows()
+
+
+def addProfile(profiles_file="model/profiles.txt"):
+    # VALIDATING
+    # Get current profiles names
+    names = getNames(profiles_file)
+
+    # Name of new profile
+    profile_name = ""
+
+    # Validate name
+    is_valid = False
+    while not is_valid:
+        profile_name = input("Ingrese el nombre de la persona: ")
+
+        if profile_name in names:
+            print("Nombre invalido")
+        else:
+            print("Nombre valido")
+            is_valid = True
+
+    # PROCESSING MEDIA
+    # Validates that there is a folder to store incoming media
+    if not os.path.isdir("training-data/temp"):
+        os.mkdir("training-data/temp")
+
+    # [Code to get media (from gallery, video sample, webcam) goes here]
+    getMediaFromImages()
+
+    # Detect and crop faces from given media
+    cropAndSaveFaces()
+
+    # Refresh status of current recognition model ("Outdated" means it needs retraining)
+    file = open("model/status.txt", "w")
+    file.write("Outdated")
+    file.close()
+
+    # SAVING PROFILE
+    # Get number for new profile (smallest integer available)
+    numbers = getNumbers(profiles_file)
+    smallest = 1
+    for i in sorted(numbers):
+        if smallest == i:
+            smallest += 1
+        else:
+            break
+    profile_number = smallest
+
+    # Build path for profile
+    profile_path = "training-data/s" + str(profile_number)
+    # Create folder for profile
+    os.mkdir(profile_path)
+
+    # Move collected faces to profile folder
+    files = os.listdir("training-data/temp/valid-imgs")
+    for file in files:
+        shutil.move("training-data/temp/valid-imgs/" + file, profile_path)
+
+    # Make new name file for profile
+    file = open(profile_path + "/name.txt", "w")
+    file.write(profile_name)
+    file.close()
+
+    # FINISH
+    # Clean validation imgs folder
+    shutil.rmtree("training-data/temp")
+
+
 def prepareTrainingData(data_folder_path="training-data"):
-    """Reads training images path and returns two lists that relate
-    an img with an integer (label for ech person to recognize)"""
+    """Reads training images and returns two lists that relate a face
+    with a label and two lists that relates a label/number with a person"""
 
     # Lists for relations img-number
     faces = []
@@ -173,6 +374,7 @@ def prepareTrainingData(data_folder_path="training-data"):
 
 
 def trainModel():
+    """Generate face recognition model files using current training data"""
     print("Preparing data...")
 
     # Delete previous model data
@@ -206,17 +408,10 @@ def trainModel():
     for i in range(len(numbers)):
         file.write(str(numbers[i]) + "-" + names[i] + "\n")
     file.close()
-
-
-def showCurrentProfiles():
-    if os.path.isfile("training-data/profiles.txt"):
-        # Read profiles from file
-        print("Leyendo perfiles")
-        file = open("training-data/profiles.txt")
-        for line in file:
-            print(line, end="")
-    else:
-        print("No existe perfil alguno")
+    # Updating status
+    file = open("model/status.txt", "w")
+    file.write("Updated")
+    file.close()
 
 
 def performPrediction(face, recognizer, subjects):
@@ -333,7 +528,7 @@ def startRecon():
 if __name__ == "__main__":
     while True:
         op = 0
-        while op < 1 or op > 8:
+        while op < 1 or op > 9:
             # Final version menu options
             print("MENU DE RECON FACIAL:")
             print("[ 1 ] --- Iniciar reconocimiento facial")
@@ -343,29 +538,45 @@ if __name__ == "__main__":
             print("[ 5 ] --- Agregar perfiles faciales")
             print("[ 6 ] --- Remover perfiles faciales")
             print("[ 7 ] --- Salir")
-            # Temporary options(developer mode)
+            # Temporary options (developer mode)
             print("[ 8 ] --- Validar nuevas imgs (de training-data/test)")
             print()
             op = int(input("Ingresa el numero de tu eleccion: "))
             print()
 
         if op == 1:
-            if os.path.isfile("model/model.yml"):
-                # Start facial recognition
-                print("Reconociendo")
-                print()
-                startRecon()
+            # Validates status of current face recognition model
+            if os.path.isfile("model/status.txt"):
+                file = open("model/status.txt", "r")
+                status = file.read()
+                status = status.replace("\n", "")
+                if status == "Updated":
+                    if os.path.isfile("model/model.yml"):
+                        # Start facial recognition
+                        print("Reconociendo")
+                        print()
+                        startRecon()
+                        print()
+                    else:
+                        # There's no model. Train and then recon
+                        print("Entrenando y reconociendo")
+                        print()
+                        trainModel()
+                        startRecon()
+                else:
+                    # Model is out to date. Train and then recon
+                    print("Actualizando y reconociendo")
+                    print()
+                    trainModel()
+                    startRecon()
             else:
-                # There's no model. Train and then recon
-                print("Entrenando y reconociendo")
-                print()
-                trainModel()
-                startRecon()
+                print("No existe status")
+                exit(0)
         elif op == 2:
             # Stop facial recognition
             print("Deteniendo recon facial")
+            # [Facial recon stopping code goes here]
             print()
-            # [Facial recon code goes here]
         elif op == 3:
             print("Entrenando modelo")
             print()
@@ -373,11 +584,11 @@ if __name__ == "__main__":
             print()
         elif op == 4:
             print("Accediendo a perfiles")
+            showCurrentProfiles()
             print()
-            # [Facial profiles view code goes here]
         elif op == 5:
             print("Agregando perfil")
-            # [Facial profile addition goes here]
+            addProfile()
             print()
         elif op == 6:
             print("Removiendo perfil")
@@ -388,6 +599,10 @@ if __name__ == "__main__":
         elif op == 8:
             print("Validando")
             cropAndSaveFaces()
+            print()
+        elif op == 9:
+            print()
+            getMediaFromWebcam()
             print()
         else:
             print("Opcion no valida")
