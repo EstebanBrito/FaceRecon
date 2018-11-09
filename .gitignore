@@ -77,6 +77,10 @@ coverage.xml
 *.mo
 *.pot
 
+# PyCharm stuff
+.idea/
+.idea
+
 # Django stuff:
 *.log
 local_settings.py
@@ -150,33 +154,20 @@ dmypy.json
 pyvenv.cfg
 pip-selfcheck.json
 
-### OpenCV's xml files ###
-xml-files/
-xml-files/*.xml
-opencv
-/opencv
-opencv/
-opencv/*.xml
-/opencv/*.xml
-*.xml
+### My stuff ###
 
-### Feed images ###
-training-data
-/training-data
-training-data/
-training-data/*.jpg
-/training-data/*.jpg
-*.jpg
-*.jpeg
-*.png
+# Training images
+training-data/*
 
-### Other stuff ###
-.idea/
-.idea
+# Trained model data
+model/*
 
-### My crazy stuff ###
+# Temporary files
+original.py
+video.py
 test.py
 test2.py
 secure-cake
 secure-cake/
-model.yml
+test-data
+test-data/

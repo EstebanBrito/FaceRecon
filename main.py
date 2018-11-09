@@ -1,6 +1,7 @@
 import cv2
 import numpy as np
 import os
+import shutil
 
 
 def drawRectangleText(img, rect, text):
@@ -11,62 +12,85 @@ def drawRectangleText(img, rect, text):
     return img
 
 
-def validateImgs(folder_path="training-data/test"):
-    """Validate if the images inside folder are valid for
-    facial recognition (imgs have at least one face,
-    min/max size, etc). """
+def cropAndSaveFaces(folder_path="training-data/temp"):
+    """Save cropped faces from images inside folder_path.
+    Used whe adding a new profile to face recognition model"""
 
-    imgs = []
-    valid_imgs_paths = []
-    non_valid_imgs = []
+    # List for images that require post processing
+    non_valid_imgs_paths = []
 
-    # Reading paths for images inside chosen folder
+    # Building path for folder where cropped faces imgs will be saved
+    cropped_faces_folder = folder_path + "/valid-imgs"
+
+    # Deleting cropped faces from previous operations
+    if os.path.isdir(cropped_faces_folder):
+        shutil.rmtree(cropped_faces_folder)
+        os.mkdir(cropped_faces_folder)
+    else:
+        os.mkdir(cropped_faces_folder)
+
+    # Reading names of the images inside chosen folder
     imgs_names = os.listdir(folder_path)
 
+    # Creating face detector (using haar cascade for better detection accuracy)
+    face_detector = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
+
     # READING IMAGES
-    for name in imgs_names:
-        img_path = folder_path + "/" + name
-        image = cv2.imread(img_path)
-        imgs.append(image)
+    # Counter for current number of saved cropped faces
+    crops = 0
 
-    # Creating face detector (using lbp cascade to simulate detection with video streaming)
-    face_detector = cv2.CascadeClassifier("xml-files/lbpcascades/lbpcascade_frontalface.xml")
+    for img_name in imgs_names:
+        # Building path for next image to read
+        img_path = folder_path + "/" + img_name
 
-    for img in imgs:
-        # STANDARDIZING IMAGES
-        # Resizing images (shortest size should be 500px)
+        # Skipping file if its a folder (not a file)
+        if not os.path.isfile(img_path):
+            continue
+
+        # Reading image
+        img = cv2.imread(img_path)
+
+        # TWEAKING IMAGE
+        # Resizing image (shortest size should be 500px)
         if img.shape[0] < img.shape[0]:  # Height is shorter
             factor = 500/img.shape[0]
         else:  # Width is shorter
             factor = 500/img.shape[1]
         img = cv2.resize(src=img, dsize=(0, 0), fx=factor, fy=factor)
 
-        # Tweaking images
-        gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+        # Converting image to gray scale (for better detection accuracy)
+        gray_img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
 
         # DETECTING AND SHOWING IMAGES
-        faces = face_detector.detectMultiScale(gray, scaleFactor=1.1, minNeighbors=7, minSize=(30, 30))
+        # Detecting faces
+        faces = face_detector.detectMultiScale(gray_img, scaleFactor=1.1, minNeighbors=7, minSize=(30, 30))
 
-        # Validates if there are faces inside img
-        if len(faces) != 1:
-            non_valid_imgs.append(img)
-        else:
-            # Manipulating and showing valid images
+        # Validates if there is only one face inside img
+        if len(faces) == 1:
             for (x, y, w, h) in faces:
+                # Mark down with a rectangle the face on the img
                 cv2.rectangle(img, (x, y), (x + w, y + h), (0, 255, 0), 2)
+                # Crop face from img and save it to a file inside proper profile folder
+                cropped_face = gray_img[y:y + w, x:x + h]
+                crops += 1
+                cv2.imwrite(cropped_faces_folder + "/" + str(crops) + ".jpg", cropped_face)
 
-            valid_imgs_paths.append()
+            # Show drawed img (uncomment if you need feedback)
+            # cv2.imshow("Valid image" + str(crops), img)
+            # cv2.waitKey(0)
+            # cv2.destroyAllWindows()
+        else:
+            # Add path for posterior handling (manual validation, weaker detection, etc)
+            non_valid_imgs_paths.append(img_path)
 
-            cv2.imshow("Valid image", img)
-            cv2.waitKey(0)
-            cv2.destroyAllWindows()
+    # Showing non-valid images (uncomment if you need feedback)
+    # for img_path in non_valid_imgs_paths:
+    #    img = cv2.imread(img_path)
+    #    cv2.imshow("NON-VALID IMAGE", img)
+    #    cv2.waitKey(0)
+    #    cv2.destroyAllWindows()
 
-    # Showing non-valid images
-    for img in non_valid_imgs:
-        cv2.imshow("NON-VALID IMAGE", img)
-        cv2.waitKey(0)
-        # Perform action (change imgs, touch selected face (if multiple faces exists))
-        cv2.destroyAllWindows()
+    print("Cropped " + str(crops) + "faces")
 
 
 def trainModel():
@@ -436,7 +460,7 @@ if __name__ == "__main__":
             print()
         elif op == 9:
             print("Validando")
-            validateImgs()
+            cropAndSaveFaces()
             print()
         else:
             print("Opcion no valida")
