@@ -436,8 +436,8 @@ def startRecon():
             frame = drawRectangleText(frame, x, y, h, w, recognition_info)
 
         # Draw rectangles indicating smallest and biggest space that can be detected as a face
-        cv2.rectangle(frame, (0, 0), (0 + min_face_size, 0 + min_face_size), (0, 0, 255))  # Min size
-        cv2.rectangle(frame, (0, 0), (0 + max_face_size, 0 + max_face_size), (255, 0, 0))  # Max size
+        # cv2.rectangle(frame, (0, 0), (0 + min_face_size, 0 + min_face_size), (0, 0, 255))  # Min size
+        # cv2.rectangle(frame, (0, 0), (0 + max_face_size, 0 + max_face_size), (255, 0, 0))  # Max size
 
         # Display resulting frame
         cv2.imshow('Video feed', frame)
