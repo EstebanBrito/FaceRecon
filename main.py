@@ -4,11 +4,6 @@ import os
 import shutil
 
 
-def resizeDyn(refrncSide=None, size=None, factor=None):
-    """Returns a resized version depending on different conditions"""
-    pass
-
-
 def convertToGray(img):
     """Returns a gray scale version of given img. Used when detecting faces"""
     img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
@@ -56,7 +51,8 @@ def getFacesFromWebcam(cropped_faces_path="training-data/temp/valid-imgs"):
     """Uses webcam to detect, crop and save faces"""
     # PERFORMANCE PARAMETERS
     min_face_size = 50
-    max_face_size = 300
+    max_face_size = 250
+    frame_period = 15
 
     # FOLDER VALIDATION
     # Validates that a brand new folder is available to storage cropped faces
@@ -68,7 +64,7 @@ def getFacesFromWebcam(cropped_faces_path="training-data/temp/valid-imgs"):
 
     # LOADING RESOURCES
     # Loading face detector
-    face_detector = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_upperbody.xml")
+    face_detector = cv2.CascadeClassifier("xml-files/haarcascades/haarcascade_frontalface_default.xml")
     # Loading video feed
     video = cv2.VideoCapture(0)
 
@@ -95,6 +91,10 @@ def getFacesFromWebcam(cropped_faces_path="training-data/temp/valid-imgs"):
         if value == 0:
             continue
 
+        # Draw boundaries
+        # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+        # cv2.rectangle(frame, (x, y), (x + w, y + h), (0, 255, 0), 2)
+
         # DETECTING FACES AND DISPLAYING VIDEO
         # Convert frame to gray scale for better detection accuracy
         gray_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -120,7 +120,7 @@ def getFacesFromWebcam(cropped_faces_path="training-data/temp/valid-imgs"):
         if cropping_is_active:
             current_frame += 1
             # ...if there is only one face, crop and save it
-            if len(faces) == 1 and current_frame % 40 == 0:
+            if len(faces) == 1 and current_frame % frame_period == 0:
                 (x, y, h, w) = faces[0]
                 cropped_face = gray_frame[y:y + w, x:x + h]
 
@@ -394,8 +394,8 @@ def loadModel():
 
 def startRecon():
     # DEFINING PARAMETERS (for best performance)
-    min_face_size = 100  # (50-150) is good for PiCamera detection up to 4 meters
-    max_face_size = 250
+    min_face_size = 50  # (50-150) is good for PiCamera detection up to 4 meters
+    max_face_size = 200
 
     # LOADING RESOURCES
     # Relations number-person (smth like {1: "Fernando", 2: "Esteban", ...})
@@ -454,18 +454,16 @@ def startRecon():
 if __name__ == "__main__":
     while True:
         op = 0
-        while op < 1 or op > 8:
+        while op < 1 or op > 6:
             # Final version menu options
             print("MENU DE RECON FACIAL:")
             print("[ 1 ] --- Iniciar reconocimiento facial")
-            print("[ 2 ] --- Detener reconocimiento facial")
-            print("[ 3 ] --- Entrenar modelo")
-            print("[ 4 ] --- Ver perfiles faciales del modelo")
-            print("[ 5 ] --- Agregar perfiles faciales")
-            print("[ 6 ] --- Remover perfiles faciales")
-            print("[ 7 ] --- Salir")
+            print("[ 2 ] --- Entrenar modelo")
+            print("[ 3 ] --- Ver perfiles faciales del modelo")
+            print("[ 4 ] --- Agregar perfiles faciales")
+            print("[ 5 ] --- Salir")
             # Temporary options (developer mode)
-            print("[ 8 ] --- Usar webcam para conseguir caras para entranamiento")
+            print("[ 6 ] --- Usar webcam para conseguir caras para entrenamiento")
             print()
             op = int(input("Ingresa el numero de tu eleccion: "))
             print()
@@ -501,30 +499,21 @@ if __name__ == "__main__":
                 print("No existe status")
                 exit(0)
         elif op == 2:
-            # Stop facial recognition
-            print("Deteniendo recon facial")
-            # [Facial recon stopping code goes here]
-            print()
-        elif op == 3:
             print("Entrenando modelo...")
             print()
             trainModel()
             print()
-        elif op == 4:
+        elif op == 3:
             print("Accediendo a perfiles...")
             showCurrentProfiles()
             print()
-        elif op == 5:
+        elif op == 4:
             print("Agregando perfil...")
             addProfile()
             print()
-        elif op == 6:
-            print("Removiendo perfil. Opcion no implementada aun")
-            # [Facial profile remotion goes here]
-            print()
-        elif op == 7:
+        elif op == 5:
             exit(0)
-        elif op == 8:
+        elif op == 6:
             print()
             getFacesFromWebcam()
             print()
