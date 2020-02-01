@@ -1,0 +1,7 @@
+# Virtual Env.
+env
+
+pycache
+
+# Data folders
+training-data
