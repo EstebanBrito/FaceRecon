@@ -15,6 +15,7 @@ if __name__ == "__main__":
     print(' [6] --- Remove facial profile')
     print(' [7] --- Exit')
     print()
+    # TODO: Flush input
     op = int(input('Select an option: '))
     print()
     clear()
@@ -23,7 +24,7 @@ if __name__ == "__main__":
         print('Starting facial detection')
         facialDetection()
       elif op==2:
-        pass
+        facialDetection(mode=1)
       elif op==3:
         trainModel()
       elif op==4:

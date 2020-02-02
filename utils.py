@@ -1,15 +1,6 @@
 import cv2
 import os
-
-CLFR_FOLDER = os.path.join('cascades', 'haar')
-CLFR_FILE = 'haarcascade_frontalface_default.xml'
-CLFR_PATH = os.path.join(CLFR_FOLDER, CLFR_FILE)
-MODEL_FOLDER = 'model'
-PROFILES_FILE = 'profiles.txt'
-MODEL_FILE = 'model.yml'
-PROFILES_PATH = os.path.join(MODEL_FOLDER, PROFILES_FILE)
-MODEL_PATH = os.path.join(MODEL_FOLDER, MODEL_FILE)
-DATA_FOLDER = 'training-data'
+from settings import MIN_SIZE, MAX_SIZE, MODEL_FOLDER, DATA_FOLDER
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -26,11 +17,15 @@ def convertImgToGray(img):
   img = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
   return img
 
+def drawBoundaries(frame, min_size=MIN_SIZE, max_size=MAX_SIZE):
+  '''Draws smallest and biggest space that can be detected as a face'''
+  cv2.rectangle(frame, (0, 0), (min_size, min_size), BLUE)
+  cv2.rectangle(frame, (0, 0), (max_size, max_size), RED)
+
 def drawRectangleText(img, x, y, w, h, text):
   '''Draw a rectangle and some text at the given coordinates in the image'''
-  cv2.rectangle(img, (x, y), (x + w, y + h), GREEN, 2)
-  cv2.putText(img, text, (x + 5, y - 5), cv2.FONT_HERSHEY_PLAIN, 1.5, GREEN, 2)
-  return img
+  cv2.rectangle(img, (x, y), (x + w, y + h), GREEN)
+  cv2.putText(img, text, (x, y - 5), cv2.FONT_HERSHEY_PLAIN, 1.5, GREEN)
 
 def setupFolderStr():
   '''Creates folder structure not included in the project'''

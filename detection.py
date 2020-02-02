@@ -1,38 +1,82 @@
 import cv2
-from utils import CLFR_PATH, convertImgToGray, drawRectangleText, RED, BLUE, GREEN
+import os
+from utils import convertImgToGray, drawRectangleText, drawBoundaries, RED, BLUE, GREEN
+from settings import CLFR_PATH, MODEL_PATH, PROFILES_PATH, MIN_SIZE, MAX_SIZE
 
-MIN_FACE_SIZE = 100
-MAX_FACE_SIZE = 250
+DETECTION = 0
+RECOGNITION = 1
 
-def facialDetection(min_face_size=MIN_FACE_SIZE, max_face_size=MAX_FACE_SIZE):
+def loadModel(path=MODEL_PATH):
+  assert os.path.isfile(path), 'There is no model. Train a model first.'
+  model = cv2.face.LBPHFaceRecognizer_create()
+  model.read(path)
+  return model
+
+def loadProfiles(path=PROFILES_PATH):
+  '''Returns a dictionary linking people's recognition ID with their names'''
+  assert os.path.isfile(path), f'{path} does not exist. Train a model first.'
+  profiles = {}
+  file = open(path, 'r')
+  for line in file:
+    data = line.split('|')
+    profiles[data[0]] = data[1].strip() # strip removes \n
+  file.close()
+  return profiles
+
+def performPrediction(face, recognizer, profiles):
+  '''Recognizes the face of a person in the image and
+  returns information about that person'''
+  # Note: predict() returns (int number, double confidence)
+  label, confidence = recognizer.predict(face)
+  label = str(label) # keys are string inside dicts
+  if confidence < 100:
+    if label in profiles.keys():
+      name = profiles[label]
+    else:
+      name = 'Not registered'
+  else:
+    name = 'Unknown'
+  return f'{name} - {format(confidence, ".2f")}'
+
+def facialDetection(mode=DETECTION, min_size=MIN_SIZE, max_size=MAX_SIZE):
+  if mode==RECOGNITION:
+    model = loadModel()
+    profiles = loadProfiles()
   cascade = cv2.CascadeClassifier(CLFR_PATH)
   video = cv2.VideoCapture(0)
 
-  while True:
-    avaliable, frame = video.read()
-    if avaliable == 0: # skip non avaliable frames
-      continue
+  try:
+    while True:
+      avaliable, frame = video.read()
+      if avaliable == 0: # skip non avaliable frames
+        continue
 
-    grayFrame = convertImgToGray(frame)
+      gray_frame = convertImgToGray(frame)
 
-    faces = cascade.detectMultiScale(
-      grayFrame,
-      scaleFactor=1.1, minNeighbors=8,
-      minSize=(min_face_size, min_face_size),
-      maxSize=(max_face_size, max_face_size)
-    )
-    
-    # PROCESSING EACH FACE IN FRAME
-    for (x, y, h, w) in faces:
-      frame = drawRectangleText(frame, x, y, h, w, '')
-    # Smallest and biggest space that can be detected as a face
-    cv2.rectangle(frame, (0, 0), (0 + min_face_size, 0 + min_face_size), BLUE)  # Min size
-    cv2.rectangle(frame, (0, 0), (0 + max_face_size, 0 + max_face_size), RED)  # Max siz
-    
-    cv2.imshow('Video feed', frame)
-    # Recognition will stop if 'q' is pressed
-    if cv2.waitKey(1) & 0xFF == ord('q'):
-      break
+      faces = cascade.detectMultiScale(
+        gray_frame,
+        scaleFactor=1.1, minNeighbors=8,
+        minSize=(min_size, min_size),
+        maxSize=(max_size, max_size)
+      )
 
-  video.release()
-  cv2.destroyAllWindows()
+      # PROCESSING EACH FACE IN FRAME
+      for (x, y, h, w) in faces:
+        if mode==DETECTION:
+          drawRectangleText(frame, x, y, h, w, '')
+        if mode==RECOGNITION:
+          cropped_face = gray_frame[y:y + w, x:x + h]
+          recon_info = performPrediction(cropped_face, model, profiles)
+          drawRectangleText(frame, x, y, h, w, recon_info)
+
+      drawBoundaries(frame)
+      cv2.imshow('Video feed', frame)
+      # Video stream will stop if 'q' is pressed
+      if cv2.waitKey(1) & 0xFF == ord('q'):
+        break
+  except Exception as Argument:
+    raise Exception(Argument)
+  finally:
+    video.release()
+    cv2.destroyAllWindows()
+

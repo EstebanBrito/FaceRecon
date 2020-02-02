@@ -1,20 +1,10 @@
 import cv2
 import numpy as np
 import os
-from utils import MODEL_PATH, PROFILES_PATH, DATA_FOLDER, convertImgToGray
+from utils import convertImgToGray
+from settings import MODEL_PATH, PROFILES_PATH, DATA_FOLDER
 
 NAME_FILE = 'name.txt'
-
-def getProfiles(path=PROFILES_PATH):
-  '''Returns a dictionary linking people's recognition ID with their names'''
-  assert os.path.join.isfile(path), f'{path} does not exist. Train a model first.'
-  profiles = {}
-  file = open(path, 'r')
-  for line in file:
-    data = line.split('|')
-    profiles[data[0]] = data[1]
-  file.close()
-  return profiles
 
 
 def prepareTrainingData(data_folder_path=DATA_FOLDER):
