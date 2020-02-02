@@ -1,7 +1,9 @@
 # Virtual Env.
 env
-
-pycache
+# Python cache
+__pycache__
+# VS Code stuff
+.vscode
 
 # Data folders
 training-data
