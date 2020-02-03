@@ -8,3 +8,6 @@ __pycache__
 # Project folders
 training-data
 model
+
+#Others
+guide.txt

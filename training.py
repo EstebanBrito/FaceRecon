@@ -2,9 +2,7 @@ import cv2
 import numpy as np
 import os
 from utils import convertImgToGray
-from settings import MODEL_PATH, PROFILES_PATH, DATA_FOLDER
-
-NAME_FILE = 'name.txt'
+from settings import MODEL_PATH, PROFILES_PATH, DATA_FOLDER, NAME_FILE
 
 
 def prepareTrainingData(data_folder_path=DATA_FOLDER):

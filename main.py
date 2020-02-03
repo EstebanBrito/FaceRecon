@@ -1,7 +1,8 @@
 from time import sleep
 from utils import clear, setupFolderStr
-from detection import facialDetection
+from detection import facialDetection, loadProfiles
 from training import trainModel
+from profile_handling import addProfile, removeProfile
 
 if __name__ == "__main__":
   setupFolderStr()
@@ -24,15 +25,20 @@ if __name__ == "__main__":
         print('Starting facial detection')
         facialDetection()
       elif op==2:
+        print('Starting facial recognition')
         facialDetection(mode=1)
       elif op==3:
+        print('Starting model training')
         trainModel()
       elif op==4:
-        pass
+        print('MODEL PROFILES')
+        profiles = loadProfiles()
+        for key in profiles:
+          print(f'{key} - {profiles[key]}')
       elif op==5:
-        pass
+        addProfile()
       elif op==6:
-        pass
+        removeProfile()
       elif op==7:
         exit(0)
       else:

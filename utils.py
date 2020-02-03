@@ -1,6 +1,6 @@
 import cv2
 import os
-from settings import MIN_SIZE, MAX_SIZE, MODEL_FOLDER, DATA_FOLDER
+from settings import MIN_SIZE, MAX_SIZE, MODEL_FOLDER, DATA_FOLDER, NAME_FILE
 
 RED = (255, 0, 0)
 GREEN = (0, 255, 0)
@@ -33,3 +33,39 @@ def setupFolderStr():
     os.makedirs(MODEL_FOLDER)
   if not os.path.isdir(DATA_FOLDER):
     os.makedirs(DATA_FOLDER)
+
+def loadLabels(data_path=DATA_FOLDER):
+  labels = []
+  folder_names = os.listdir(data_path)
+  for folder_name in folder_names:
+    label = int(folder_name.replace('s', ''))
+    labels.append(label)
+  return labels
+
+def loadNames(data_path=DATA_FOLDER):
+  names = []
+  folder_names = os.listdir(data_path)
+  for folder_name in folder_names:
+    name_path = os.path.join(data_path, folder_name, NAME_FILE)
+    file = open(name_path)
+    name = file.read()
+    name = name.strip()
+    file.close()
+    names.append(name)
+  return names
+
+def loadUntrainedProfiles(data_path=DATA_FOLDER):
+  profiles = {}
+  folder_names = os.listdir(data_path)
+  for folder_name in folder_names:
+    # Get label
+    label = int(folder_name.replace('s', ''))
+    # Get name
+    name_path = os.path.join(data_path, folder_name, NAME_FILE)
+    file = open(name_path)
+    name = file.read()
+    name = name.strip()
+    file.close()
+    # Append
+    profiles[label] = name
+  return profiles

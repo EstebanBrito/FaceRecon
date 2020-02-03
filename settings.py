@@ -9,6 +9,7 @@ MODEL_FILE = 'model.yml'
 PROFILES_PATH = os.path.join(MODEL_FOLDER, PROFILES_FILE)
 MODEL_PATH = os.path.join(MODEL_FOLDER, MODEL_FILE)
 DATA_FOLDER = 'training-data'
+NAME_FILE = 'name.txt'
 
 MIN_SIZE = 100
 MAX_SIZE = 250
