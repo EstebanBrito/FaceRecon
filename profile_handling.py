@@ -42,6 +42,9 @@ def getFaces(profile_path, min_size=MIN_SIZE, max_size=MAX_SIZE):
           crops += 1
           cropped_img_path = os.path.join(profile_path, f'{crops}.jpg')
           cv2.imwrite(cropped_img_path, cropped_face)
+          print('Captured image!')
+          if crops>=15:
+            print('Enough images captured. Stop collection.')
 
       drawBoundaries(frame)
       cv2.imshow('Video feed', frame)
